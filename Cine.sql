@@ -11,6 +11,10 @@
 # ************************************************************
 
 
+DROP DATABASE IF EXISTS cine;
+CREATE DATABASE cine;
+USE cine;
+
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
@@ -320,6 +324,84 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 AS SELECT
    `peliculas`.`nombre_pelicula` AS `nombre_pelicula`
 FROM `peliculas` where (`peliculas`.`fecha_salida_cartelera` is null);
+
+--
+-- Dumping routines (PROCEDURE) for database 'Cine'
+--
+DELIMITER ;;
+
+# Dump of PROCEDURE crearFuncion
+# ------------------------------------------------------------
+
+/*!50003 DROP PROCEDURE IF EXISTS `crearFuncion` */;;
+/*!50003 SET SESSION SQL_MODE="ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"*/;;
+
+/*Creación de un procedimiento para insertar una función rápidamente*/
+/*!50003 CREATE*/ /*!50020 DEFINER=`root`@`localhost`*/ /*!50003 PROCEDURE `crearFuncion`(IN id_pelicula INT,IN id_sala INT,IN fecha_inicio_funcion DATETIME)
+BEGIN 
+
+INSERT INTO  funciones
+ VALUES 
+
+ (id_pelicula, id_sala, fecha_inicio_funcion);
+
+END */;;
+
+/*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE */;;
+# Dump of PROCEDURE quitarDeCartelera
+# ------------------------------------------------------------
+
+/*!50003 DROP PROCEDURE IF EXISTS `quitarDeCartelera` */;;
+/*!50003 SET SESSION SQL_MODE="ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"*/;;
+/*Creación de un procedimiento para quitar una película de cartelera, eliminando todas sus funciones*/
+/*!50003 CREATE*/ /*!50020 DEFINER=`root`@`localhost`*/ /*!50003 PROCEDURE `quitarDeCartelera`(IN id_pelicula INT)
+BEGIN 
+
+DELETE FROM funciones
+WHERE (funciones.id_pelicula = id_pelicula);
+END */;;
+
+/*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE */;;
+DELIMITER ;
+
+--
+-- Dumping routines (FUNCTION) for database 'Cine'
+--
+DELIMITER ;;
+
+# Dump of FUNCTION cantidadPeliculasEnCartelera
+# ------------------------------------------------------------
+
+/*!50003 DROP FUNCTION IF EXISTS `cantidadPeliculasEnCartelera` */;;
+/*!50003 SET SESSION SQL_MODE="ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"*/;;
+/*Creación de una función que muestra la cantidad de películas en cartelera*/
+/*!50003 CREATE*/ /*!50020 DEFINER=`root`@`localhost`*/ /*!50003 FUNCTION `cantidadPeliculasEnCartelera`() RETURNS int
+    DETERMINISTIC
+BEGIN
+DECLARE peliculasCartelera INT;
+SELECT COUNT(*) INTO peliculasCartelera FROM peliculas WHERE (peliculas.fecha_salida_cartelera is null);
+RETURN peliculasCartelera;
+END */;;
+
+/*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE */;;
+# Dump of FUNCTION datosFuncion
+# ------------------------------------------------------------
+
+/*!50003 DROP FUNCTION IF EXISTS `datosFuncion` */;;
+/*!50003 SET SESSION SQL_MODE="ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"*/;;
+/*Creación de una función que muestra en una línea todos los datos de una función*/
+/*!50003 CREATE*/ /*!50020 DEFINER=`root`@`localhost`*/ /*!50003 FUNCTION `datosFuncion`(id_pelicula INT, id_sala INT, hora_inicio_funcion DATETIME) RETURNS varchar(150) CHARSET utf8mb4
+    DETERMINISTIC
+BEGIN 
+
+DECLARE FUNCION VARCHAR (250);
+SELECT CONCAT (peliculas.nombre_pelicula, ", ", salas.nombre_sala, ", ", funciones.hora_inicio_funcion) INTO funcion FROM
+funciones INNER JOIN salas ON funciones.id_sala = salas.id_sala INNER JOIN peliculas ON funciones.id_pelicula = peliculas.id_pelicula WHERE (funciones.id_pelicula = id_pelicula AND funciones.id_sala = id_sala AND funciones.hora_inicio_funcion = hora_inicio_funcion);
+RETURN funcion;
+END */;;
+
+/*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE */;;
+DELIMITER ;
 
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
