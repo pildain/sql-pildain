@@ -7,13 +7,9 @@
 #
 # Host: 127.0.0.1 (MySQL 8.0.28)
 # Database: Cine
-# Generation Time: 2022-05-08 02:59:24 +0000
+# Generation Time: 2022-05-23 14:45:27 +0000
 # ************************************************************
 
-
-DROP DATABASE IF EXISTS cine;
-CREATE DATABASE cine;
-USE cine;
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -41,29 +37,28 @@ CREATE TABLE `funciones` (
   CONSTRAINT `función-sala` FOREIGN KEY (`id_sala`) REFERENCES `salas` (`id_sala`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-LOCK TABLES `funciones` WRITE;
-/*!40000 ALTER TABLE `funciones` DISABLE KEYS */;
+/*Creación de triggers para inserción, eliminación y modificación de funciones. Los de inserción y eliminación dejan registro en la tabla log_auditoria_funciones, y los de modificación en la tabla log_modificacion_funciones*/
+DELIMITER ;;
+/*!50003 SET SESSION SQL_MODE="ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION" */;;
+/*!50003 CREATE */ /*!50017 DEFINER=`root`@`localhost` */ /*!50003 TRIGGER `trg_log_insercion_funciones` AFTER INSERT ON `funciones` FOR EACH ROW BEGIN
 
-INSERT INTO `funciones` (`id_pelicula`, `id_sala`, `hora_inicio_funcion`)
-VALUES
-	(5,1,'2022-05-07 20:00:00'),
-	(6,2,'2022-05-07 20:00:00'),
-	(7,3,'2022-05-07 20:00:00'),
-	(5,4,'2022-05-07 20:00:00'),
-	(6,5,'2022-05-07 20:00:00'),
-	(7,6,'2022-05-07 20:00:00'),
-	(5,7,'2022-05-07 20:00:00'),
-	(6,8,'2022-05-07 20:00:00'),
-	(7,9,'2022-05-07 20:00:00'),
-	(5,10,'2022-05-07 20:00:00'),
-	(6,11,'2022-05-07 20:00:00'),
-	(7,12,'2022-05-07 20:00:00'),
-	(5,13,'2022-05-07 20:00:00'),
-	(6,14,'2022-05-07 20:00:00'),
-	(7,15,'2022-05-07 20:00:00');
+INSERT INTO log_auditoria_funciones (id_pelicula,id_sala,hora_inicio_funcion, nombre_accion , usuario, fecha_accion)
+VALUES ( NEW.id_pelicula ,NEW.ID_sala, NEW.hora_inicio_funcion, 'INSERT' , CURRENT_USER(), NOW());
+END */;;
+/*!50003 SET SESSION SQL_MODE="ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION" */;;
+/*!50003 CREATE */ /*!50017 DEFINER=`root`@`localhost` */ /*!50003 TRIGGER `trg_log_modificacion_funciones` AFTER UPDATE ON `funciones` FOR EACH ROW BEGIN
 
-/*!40000 ALTER TABLE `funciones` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO log_auditoria_modificacion_funciones (antiguo_id_pelicula , antiguo_id_sala , antigua_hora_inicio_funcion , nuevo_id_pelicula , nuevo_id_sala , nueva_hora_inicio_funcion , nombre_accion , usuario, fecha_accion)
+VALUES ( OLD.id_pelicula ,OLD.ID_sala, OLD.hora_inicio_funcion, NEW.id_pelicula ,NEW.ID_sala, NEW.hora_inicio_funcion, 'UPDATE' , CURRENT_USER(), NOW());
+END */;;
+/*!50003 SET SESSION SQL_MODE="ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION" */;;
+/*!50003 CREATE */ /*!50017 DEFINER=`root`@`localhost` */ /*!50003 TRIGGER `trg_log_eliminacion_funciones` BEFORE DELETE ON `funciones` FOR EACH ROW BEGIN
+
+INSERT INTO log_auditoria_funciones (id_pelicula,id_sala,hora_inicio_funcion, nombre_accion , usuario, fecha_accion)
+VALUES ( OLD.id_pelicula ,OLD.ID_sala, OLD.hora_inicio_funcion, 'DELETE' , CURRENT_USER(), NOW());
+END */;;
+DELIMITER ;
+/*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE */;
 
 
 # Dump of table funciones_en_palermo
@@ -96,32 +91,55 @@ CREATE TABLE `funciones_en_recoleta` (
 # ------------------------------------------------------------
 
 DROP TABLE IF EXISTS `generos`;
-
 /*Creación de la tabla géneros, que guarda los distintos géneros identificados con un ID*/
+
 CREATE TABLE `generos` (
   `id_genero` int unsigned NOT NULL AUTO_INCREMENT,
   `nombre_genero` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '',
   PRIMARY KEY (`id_genero`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-LOCK TABLES `generos` WRITE;
-/*!40000 ALTER TABLE `generos` DISABLE KEYS */;
 
-INSERT INTO `generos` (`id_genero`, `nombre_genero`)
-VALUES
-	(1,'Drama'),
-	(2,'Comedia'),
-	(3,'Romance'),
-	(4,'Acción'),
-	(5,'Ciencia ficción'),
-	(6,'Fantasía'),
-	(7,'Comedia romántica'),
-	(8,'Infantil'),
-	(9,'terror'),
-	(10,'suspenso');
 
-/*!40000 ALTER TABLE `generos` ENABLE KEYS */;
-UNLOCK TABLES;
+# Dump of table log_auditoria_funciones
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `log_auditoria_funciones`;
+
+/*Creación de la tabla log_auditoria_funciones, usada para dejar constancia de la creación y eliminación de funciones*/
+CREATE TABLE `log_auditoria_funciones` (
+  `id_log` int NOT NULL AUTO_INCREMENT,
+  `id_pelicula` int NOT NULL,
+  `id_sala` int NOT NULL,
+  `hora_inicio_funcion` datetime NOT NULL,
+  `nombre_accion` varchar(10) DEFAULT NULL,
+  `usuario` varchar(100) DEFAULT NULL,
+  `fecha_accion` datetime DEFAULT NULL,
+  PRIMARY KEY (`id_log`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+
+# Dump of table log_auditoria_modificacion_funciones
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `log_auditoria_modificacion_funciones`;
+
+/*Creación de la tabla log_auditoria_modificacion_funciones, utilizada para dejar constancia de los cambios realizados a funciones existentes*/
+CREATE TABLE `log_auditoria_modificacion_funciones` (
+  `id_log` int NOT NULL AUTO_INCREMENT,
+  `antiguo_id_pelicula` int NOT NULL,
+  `antiguo_id_sala` int NOT NULL,
+  `antigua_hora_inicio_funcion` datetime NOT NULL,
+  `nuevo_id_pelicula` int NOT NULL,
+  `nuevo_id_sala` int NOT NULL,
+  `nueva_hora_inicio_funcion` datetime NOT NULL,
+  `nombre_accion` varchar(10) DEFAULT NULL,
+  `usuario` varchar(100) DEFAULT NULL,
+  `fecha_accion` datetime DEFAULT NULL,
+  PRIMARY KEY (`id_log`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 
 
 # Dump of table peliculas
@@ -143,21 +161,6 @@ CREATE TABLE `peliculas` (
   CONSTRAINT `género-película` FOREIGN KEY (`id_genero`) REFERENCES `generos` (`id_genero`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-LOCK TABLES `peliculas` WRITE;
-/*!40000 ALTER TABLE `peliculas` DISABLE KEYS */;
-
-INSERT INTO `peliculas` (`id_pelicula`, `nombre_pelicula`, `id_genero`, `clasificacion`, `Duración en minutos`, `fecha_ingreso_cartelera`, `fecha_salida_cartelera`)
-VALUES
-	(1,'El Rey León',8,'ATP',89,'2021-10-01','2021-10-20'),
-	(2,'El Señor De Los Anillos: La Comunidad Del Anillo',6,'+13',178,'2021-06-10','2021-06-30'),
-	(3,'El Señor De Los Anillos: Las Dos Torres',6,'+13',179,'2021-06-10','2021-06-30'),
-	(4,'El Señor De Los Anillos: El Retorno Del Rey',6,'+13',201,'2021-06-10','2021-06-30'),
-	(5,'El Conjuro',9,'+16',112,'2022-05-01',NULL),
-	(6,'Duro De Matar',4,'+16',132,'2022-05-01',NULL),
-	(7,'Encanto',8,'ATP',109,'2022-05-01',NULL);
-
-/*!40000 ALTER TABLE `peliculas` ENABLE KEYS */;
-UNLOCK TABLES;
 
 
 # Dump of table peliculas_en_cartelera
@@ -208,29 +211,6 @@ CREATE TABLE `salas` (
   CONSTRAINT `sala-sucursal` FOREIGN KEY (`id_sucursal`) REFERENCES `Sucursales` (`id_sucursal`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-LOCK TABLES `salas` WRITE;
-/*!40000 ALTER TABLE `salas` DISABLE KEYS */;
-
-INSERT INTO `salas` (`id_sala`, `nombre_sala`, `id_sucursal`)
-VALUES
-	(1,'Recoleta sala 1',1),
-	(2,'Recoleta sala 2',1),
-	(3,'Recoleta sala 3',1),
-	(4,'Palermo sala 1',2),
-	(5,'Palermo sala 2',2),
-	(6,'Palermo sala 3',2),
-	(7,'Abasto sala 1',3),
-	(8,'Abasto sala 2',3),
-	(9,'Abasto sala 3',3),
-	(10,'Caballito sala 1',4),
-	(11,'Caballito sala 2',4),
-	(12,'Caballito sala 3',4),
-	(13,'Belgrano sala 1',5),
-	(14,'Belgrano sala 2',5),
-	(15,'Belgrano sala 3',5);
-
-/*!40000 ALTER TABLE `salas` ENABLE KEYS */;
-UNLOCK TABLES;
 
 
 # Dump of table Sucursales
@@ -245,19 +225,6 @@ CREATE TABLE `Sucursales` (
   PRIMARY KEY (`id_sucursal`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-LOCK TABLES `Sucursales` WRITE;
-/*!40000 ALTER TABLE `Sucursales` DISABLE KEYS */;
-
-INSERT INTO `Sucursales` (`id_sucursal`, `nombre_sucursal`)
-VALUES
-	(1,'Recoleta'),
-	(2,'Palermo'),
-	(3,'Abasto'),
-	(4,'Caballito'),
-	(5,'Belgrano');
-
-/*!40000 ALTER TABLE `Sucursales` ENABLE KEYS */;
-UNLOCK TABLES;
 
 
 
@@ -330,13 +297,12 @@ FROM `peliculas` where (`peliculas`.`fecha_salida_cartelera` is null);
 --
 DELIMITER ;;
 
+/*Creación del procedimiento crearFuncion, sirve para crear una función rápidamente introduciendo el id de la película, el id de la sala y la hora de inicio*/
 # Dump of PROCEDURE crearFuncion
 # ------------------------------------------------------------
 
 /*!50003 DROP PROCEDURE IF EXISTS `crearFuncion` */;;
 /*!50003 SET SESSION SQL_MODE="ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"*/;;
-
-/*Creación de un procedimiento para insertar una función rápidamente*/
 /*!50003 CREATE*/ /*!50020 DEFINER=`root`@`localhost`*/ /*!50003 PROCEDURE `crearFuncion`(IN id_pelicula INT,IN id_sala INT,IN fecha_inicio_funcion DATETIME)
 BEGIN 
 
@@ -348,12 +314,13 @@ INSERT INTO  funciones
 END */;;
 
 /*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE */;;
+/*Creación del procedimiento quitarDeCartelera, sirve para quitar una película de cartelera eliminando todas sus funciones. Para llamarlo se introduce el id de la película*/
 # Dump of PROCEDURE quitarDeCartelera
 # ------------------------------------------------------------
 
+
 /*!50003 DROP PROCEDURE IF EXISTS `quitarDeCartelera` */;;
 /*!50003 SET SESSION SQL_MODE="ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"*/;;
-/*Creación de un procedimiento para quitar una película de cartelera, eliminando todas sus funciones*/
 /*!50003 CREATE*/ /*!50020 DEFINER=`root`@`localhost`*/ /*!50003 PROCEDURE `quitarDeCartelera`(IN id_pelicula INT)
 BEGIN 
 
@@ -369,12 +336,12 @@ DELIMITER ;
 --
 DELIMITER ;;
 
+/*Creación de la función cantidadPeliculasEnCartelera, devuelve la cantidad de películas en cartelera*/
 # Dump of FUNCTION cantidadPeliculasEnCartelera
 # ------------------------------------------------------------
 
 /*!50003 DROP FUNCTION IF EXISTS `cantidadPeliculasEnCartelera` */;;
 /*!50003 SET SESSION SQL_MODE="ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"*/;;
-/*Creación de una función que muestra la cantidad de películas en cartelera*/
 /*!50003 CREATE*/ /*!50020 DEFINER=`root`@`localhost`*/ /*!50003 FUNCTION `cantidadPeliculasEnCartelera`() RETURNS int
     DETERMINISTIC
 BEGIN
@@ -387,9 +354,9 @@ END */;;
 # Dump of FUNCTION datosFuncion
 # ------------------------------------------------------------
 
+/*Creación de la función datosFuncion, utilizada para obtener los datos de una función (nombre de la película, de la sala y hora de inicio). Para llamarla se introducen el id de la película, de la sala y la hora de inicio*/
 /*!50003 DROP FUNCTION IF EXISTS `datosFuncion` */;;
 /*!50003 SET SESSION SQL_MODE="ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"*/;;
-/*Creación de una función que muestra en una línea todos los datos de una función*/
 /*!50003 CREATE*/ /*!50020 DEFINER=`root`@`localhost`*/ /*!50003 FUNCTION `datosFuncion`(id_pelicula INT, id_sala INT, hora_inicio_funcion DATETIME) RETURNS varchar(150) CHARSET utf8mb4
     DETERMINISTIC
 BEGIN 
